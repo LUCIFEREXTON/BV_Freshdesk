@@ -113,7 +113,6 @@ class Api::V1::TicketController < ApplicationController
 
 	def verify_fields(obj, args)
 		args.each do |label|
-		  p label
 		  raise BlogVault::Error.new('You have not send all required fields')	unless obj.has_key?(label)
 		end
 	end
@@ -123,7 +122,7 @@ class Api::V1::TicketController < ApplicationController
 			body = JSON.parse(resp.body)
 			body["errors"].each do |error|
 				if error["message"] == 'There is no contact matching the given email'
-					raise BlogVault::Error.new("New User")
+					raise BlogVault::Error.new("You have no Tickets!!!")
 				end
 			end
 			raise BlogVault::Error.new("Server Issue, Please Try Again...") 
