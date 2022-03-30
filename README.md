@@ -21,28 +21,33 @@ Or install it yourself as:
     $ gem install freshdesk
 
 ## Usage
+Either just run
+		```
+		rails g freshdesk:install
+		```
+		And then add your api key and base_url of freshdesk in `config/initialisers/freshdesk.rb`
+Or You can do this by yourself
+		1. Add `//= link freshdesk/manifest.js` inside file `app/assets/config/manifest.js` at the end.
+		2. Make a file `config/initializers/freshdesk.rb`
+		3. Copy following line of code
+		```
+		require 'freshdesk'
 
-1. Add `//= link freshdesk/manifest.js` inside file `app/assets/config/manifest.js` at the end.
-2. Make a file `config/initializers/freshdesk.rb`
-3. Copy following line of code
-```
-require 'freshdesk'
+		Freshdesk.config <Your Freshdesk Api key>, <Your freshdesk baseurl>
+		```
 
-Freshdesk.config <Your Freshdesk Api key>, <Your freshdesk baseurl>
-```
+		e.g. code 
+		```
+		require 'freshdesk'
 
-e.g. code 
-```
-require 'freshdesk'
+		Freshdesk.config "Bfjk4t0gjtgj98jt5hghg",'https://something.freshdesk.com'
+		```
+Before making any api call to fetch, update, read, delete ticket you have to user's email
 
-Freshdesk.config "Bfjk4t0gjtgj98jt5hghg95h9==",'https://something-help.freshdesk.com'
-```
-4. Before making any api call to fetch, update, read, delete ticket you have to user's email
+Import freshdesk `require 'freshdesk'` in the file you want to set user email
+then `Freshdesk::UserCredentials.set_email 'something@email.com'` to set email
 
-first import freshdesk `require 'freshdesk'` in the file you want to set user email
-then `Freshdesk::UserCredentials.email = 'something@email.com'` to set email
-
-(<i>Note: You can set this just after user gets login so that you don't have to set it just before api call</i>)
+(<i>Tip: You can set this just after user gets login so that you don't have to set it just before api call</i>)
 
 ## Development
 
