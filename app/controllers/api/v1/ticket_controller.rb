@@ -10,7 +10,6 @@ class Api::V1::TicketController < ApplicationController
   before_action :load_user_defaults
 	before_action :check_user_email
 	before_action :httparty_default_setting
-	before_action :request_puts
 	rescue_from StandardError, :with => :catch_error
 	rescue_from BlogVault::Error, :with => :catch_custom_error
 
@@ -121,13 +120,12 @@ class Api::V1::TicketController < ApplicationController
 
 	def validate_response(resp)
 		if resp.code != 200 && resp.code != 201 
-			errors = JSON.parse(resp.errors)
-			errors.each do |error|
-				if error.message == 'There is no contact matching the given email'
-					render json: {message: 'New User'}, status: 400
+			body = JSON.parse(resp.body)
+			body["errors"].each do |error|
+				if error["message"] == 'There is no contact matching the given email'
+					raise BlogVault::Error.new("New User")
 				end
 			end
-		else
 			raise BlogVault::Error.new("Server Issue, Please Try Again...") 
 		end
 	end
@@ -138,17 +136,17 @@ class Api::V1::TicketController < ApplicationController
 	end
 
 	def catch_error(error)
-		@logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
+		logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
 		render json: { message: error }, status: 400
 	end
 
 	def catch_custom_error(error)
-		@logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
+		logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
 		render json: { message: error }, status: 400
 	end
 	
 	def logger
-		@logger ||= Logger.new("#{Rails.root.to_s}/log/freshdesk.log")
+		@logger ||= ActiveSupport::Logger.new("#{Rails.root.to_s}/log/freshdesk.log")
 	end
 
 end
