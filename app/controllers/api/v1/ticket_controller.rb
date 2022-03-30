@@ -103,12 +103,11 @@ class Api::V1::TicketController < ApplicationController
 	end
 
 	def load_user_defaults
-		p 'prntout: ',Freshdesk
-		if Freshdesk::UserCredentials.email.nil?
+		if Freshdesk::UserCredentials.get_email.nil?
 			raise BlogVault::Error.new('Internal Server Error')	
 			puts 'User Email is not set'
 		else
-			@email = Freshdesk::UserCredentials.email #'contact10@freshdesk.com' 
+			@email = Freshdesk::UserCredentials.get_email #'contact10@freshdesk.com' 
 		end
 	end
 

@@ -22,11 +22,11 @@ module Freshdesk
 	class UserCredentials
 		@@email = nil
 
-		def UserCredentials.email= (e)
+		def UserCredentials.set_email(e)
       @@email = e
     end
 
-    def UserCredentials.email
+    def UserCredentials.get_email
       @@email
     end
 	end
