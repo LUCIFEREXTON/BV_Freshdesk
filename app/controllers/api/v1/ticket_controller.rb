@@ -1,18 +1,20 @@
 require 'httparty'
 require 'json'
+require 'freshdesk'
 class Api::V1::TicketController < ApplicationController
 	
 	protect_from_forgery
 	include HTTParty
+	include Freshdesk
   before_action :load_user_defaults
 	before_action :httparty_default_setting
 	before_action :request_puts
-	rescue_from StandardError, :with => :catch_error
+	#rescue_from StandardError, :with => :catch_error
 	rescue_from BlogVault::Error, :with => :catch_custom_error
 
 	def index
 		verify_fields(params, [:page_no, :per_page]) 
-		res = self.class.get("/tickets?order_by=updated_at&email=#{@@email}&per_page=#{params[:per_page]}&page=#{params[:page_no]}")
+		res = self.class.get("/tickets?order_by=updated_at&email=#{@email}&per_page=#{params[:per_page]}&page=#{params[:page_no]}")
 		validate_response(res)
 		render json: res.body, status: res.code
   end
@@ -38,7 +40,7 @@ class Api::V1::TicketController < ApplicationController
   def create
 		verify_fields(params, [:subject, :description])
 		body = required_field(params,[:attachments, :subject, :description])
-		body[:email] = @@email
+		body[:email] = @email
 		body[:priority] = 1
 		body[:status] = 2
 		body[:custom_fields] = {
@@ -94,12 +96,20 @@ class Api::V1::TicketController < ApplicationController
 	private
 	
 	def httparty_default_setting
-		self.class.base_uri FRESHDESK_CONF["REACT_APP_FRESHDESK_BASE_URL"]
-		self.class.headers :Authorization => FRESHDESK_CONF["REACT_APP_FRESHDESK_API_KEY"]
+		puts Freshdesk.base_url
+		puts Freshdesk.api_key
+		self.class.base_uri Freshdesk.base_url#FRESHDESK_CONF["REACT_APP_FRESHDESK_BASE_URL"]
+		self.class.headers :Authorization => Freshdesk.api_key#FRESHDESK_CONF["REACT_APP_FRESHDESK_API_KEY"]
 	end
 
 	def load_user_defaults
-		@@email = 'contact10@freshdesk.com' 
+		p 'prntout: ',Freshdesk
+		if Freshdesk::UserCredentials.email.nil?
+			raise BlogVault::Error.new('Internal Server Error')	
+			puts 'User Email is not set'
+		else
+			@email = Freshdesk::UserCredentials.email #'contact10@freshdesk.com' 
+		end
 	end
 
 	def required_field(obj, labels_list)
@@ -114,13 +124,17 @@ class Api::V1::TicketController < ApplicationController
 
 	def verify_fields(obj, args)
 		puts 'Required Args: ',args
+		p 'Given Args: '
 		args.each do |label|
-		 raise BlogVault::Error.new('You have not send all required fields')	unless obj.has_key?(label)
+		  p label
+		  raise BlogVault::Error.new('You have not send all required fields')	unless obj.has_key?(label)
 		end
 	end
 
 	def validate_response(resp)
+		puts resp
 		if resp.code != 200 && resp.code != 201 
+			puts resp
 			raise BlogVault::Error.new("Server Issue, Please Try Again...") 
 		end
 	end

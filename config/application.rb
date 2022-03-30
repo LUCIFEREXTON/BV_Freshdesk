@@ -10,7 +10,7 @@ module SupportRails
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.1
-		config.autoload_paths << "#{Rails.root}/lib"
+		config.autoload_paths << "#{Gem.loaded_specs['freshdesk'].full_gem_path}/lib"
 
     # Configuration for the application, engines, and railties goes here.
     #
