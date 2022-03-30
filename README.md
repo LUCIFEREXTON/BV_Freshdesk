@@ -21,27 +21,27 @@ Or install it yourself as:
     $ gem install freshdesk
 
 ## Usage
-Either just run
-		```
-		rails g freshdesk:install
-		```
-		This command will do the following actions:
-		1. Create a file `config/initializers/freshdesk.rb`
-		2. Create or append a file `app/assets/config/manifest.js`
-		3. Will Add `//= link freshdesk/manifest.js` inside file `app/assets/config/manifest.js` at the end.
-		4. Will add  following line of code in `config/initializers/freshdesk.rb` that was created in step 1
-		```
-		require 'freshdesk'
+Run
+`rails g freshdesk:install`
 
-		#Freshdesk.config <Your Freshdesk Api key>, <Your freshdesk baseurl>
-		e.g., 
-		#Freshdesk.config "Bfjk4t0gjtgj98jt5hghg",'https://something.freshdesk.com'
-		```
+This command will do the following actions:
+  1. Create a file `config/initializers/freshdesk.rb`
+  2. Create or append a file `app/assets/config/manifest.js`
+  3. Will Add `//= link freshdesk/manifest.js` inside file `app/assets/config/manifest.js` at the end.
+  4. Will add  following line of code in `config/initializers/freshdesk.rb` that was created in step 1
+```
+require 'freshdesk'
 
-		In the file `config/initializers/freshdesk.rb`, add your freshdesk api key and freshdesk url as shown in the e.g.
+#Freshdesk.config <Your Freshdesk Api key>, <Your freshdesk baseurl>
+e.g., 
+#Freshdesk.config "Bfjk4t0gjtgj98jt5hghg",'https://something.freshdesk.com'
+```
+
+In the file `config/initializers/freshdesk.rb`, add your freshdesk api key and freshdesk url as shown in the e.g.
 
 Before making any api call to fetch, update, read, delete ticket you have to enter your customer's email
 In the controller where your customer will be logged in do the following:
+
 Import freshdesk `require 'freshdesk'`
 then `Freshdesk::UserCredentials.set_email <User Email>` to set email
 
