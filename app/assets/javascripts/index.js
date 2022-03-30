@@ -3195,7 +3195,7 @@ var reducer = function reducer() {
           filterList: [action.ticket].concat(_toConsumableArray(state.filterList.filter(function (ticket) {
             return ticket.id !== action.ticket.id;
           }))),
-          opentickets: state.opentickets + 1
+          opentickets: action.ticket.status === 5 ? state.opentickets - 1 : state.opentickets + 1
         });
       }
 
@@ -78886,4 +78886,4 @@ module.exports = function (module) {
 /***/ })
 
 /******/ });
-//# sourceMappingURL=index-95f22f9feca7d9a1a406.js.map
+//# sourceMappingURL=index-184455918e93e7def0ba.js.map
