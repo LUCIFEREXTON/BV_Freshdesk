@@ -2,14 +2,16 @@ require 'httparty'
 require 'json'
 require 'freshdesk'
 class Api::V1::TicketController < ApplicationController
-	
-	protect_from_forgery
 	include HTTParty
 	include Freshdesk
+
+  before_action :authenticate_user!
+	protect_from_forgery
   before_action :load_user_defaults
+	before_action :check_user_email
 	before_action :httparty_default_setting
 	before_action :request_puts
-	#rescue_from StandardError, :with => :catch_error
+	rescue_from StandardError, :with => :catch_error
 	rescue_from BlogVault::Error, :with => :catch_custom_error
 
 	def index
@@ -96,19 +98,8 @@ class Api::V1::TicketController < ApplicationController
 	private
 	
 	def httparty_default_setting
-		puts Freshdesk.base_url
-		puts Freshdesk.api_key
-		self.class.base_uri Freshdesk.base_url#FRESHDESK_CONF["REACT_APP_FRESHDESK_BASE_URL"]
-		self.class.headers :Authorization => Freshdesk.api_key#FRESHDESK_CONF["REACT_APP_FRESHDESK_API_KEY"]
-	end
-
-	def load_user_defaults
-		if Freshdesk::UserCredentials.get_email.nil?
-			raise BlogVault::Error.new('Internal Server Error')	
-			puts 'User Email is not set'
-		else
-			@email = Freshdesk::UserCredentials.get_email #'contact10@freshdesk.com' 
-		end
+		self.class.base_uri Freshdesk.base_url
+		self.class.headers :Authorization => Freshdesk.api_key
 	end
 
 	def required_field(obj, labels_list)
@@ -122,8 +113,6 @@ class Api::V1::TicketController < ApplicationController
 	end
 
 	def verify_fields(obj, args)
-		puts 'Required Args: ',args
-		p 'Given Args: '
 		args.each do |label|
 		  p label
 		  raise BlogVault::Error.new('You have not send all required fields')	unless obj.has_key?(label)
@@ -131,26 +120,35 @@ class Api::V1::TicketController < ApplicationController
 	end
 
 	def validate_response(resp)
-		puts resp
 		if resp.code != 200 && resp.code != 201 
-			puts resp
+			errors = JSON.parse(resp.errors)
+			errors.each do |error|
+				if error.message == 'There is no contact matching the given email'
+					render json: {message: 'New User'}, status: 400
+				end
+			end
+		else
 			raise BlogVault::Error.new("Server Issue, Please Try Again...") 
 		end
 	end
 
+	def check_user_email
+		raise BlogVault::Error.new('Email passed is having value nil') if @email.nil?
+		raise BlogVault::Error.new('Invalid Email format') if (@email =~ URI::MailTo::EMAIL_REGEXP).nil?
+	end
+
 	def catch_error(error)
-		puts error
+		@logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
 		render json: { message: error }, status: 400
 	end
 
 	def catch_custom_error(error)
-		puts error
+		@logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
 		render json: { message: error }, status: 400
 	end
-
-	def request_puts
-		puts 'Params : ',params
+	
+	def logger
+		@logger ||= Logger.new("#{Rails.root.to_s}/log/freshdesk.log")
 	end
 
 end
-#{"description":"Validation failed","errors":[{"field":"priorty","message":"Unexpected/invalid field in request","code":"invalid_field"}]}
