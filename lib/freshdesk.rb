@@ -18,16 +18,4 @@ module Freshdesk
 			self.base_url = "#{url}/api/v2"
 		end
   end
-	
-	class UserCredentials
-		@@email = nil
-
-		def UserCredentials.set_email(e)
-      @@email = e
-    end
-
-    def UserCredentials.get_email
-      @@email
-    end
-	end
 end
