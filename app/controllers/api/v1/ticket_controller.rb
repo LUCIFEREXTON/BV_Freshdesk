@@ -5,7 +5,6 @@ class Api::V1::TicketController < ApplicationController
 	include HTTParty
 	include Freshdesk
 
-  before_action :authenticate_user!
 	protect_from_forgery
   before_action :load_user_defaults
 	before_action :check_user_email
@@ -15,9 +14,9 @@ class Api::V1::TicketController < ApplicationController
 
 	def index
 		verify_fields(params, [:page_no, :per_page]) 
-		res = self.class.get("/tickets?order_by=updated_at&email=#{@email}&per_page=#{params[:per_page]}&page=#{params[:page_no]}")
-		validate_response(res)
-		render json: res.body, status: res.code
+		all_tickets_res = self.class.get("/tickets?order_by=updated_at&email=#{@email}&per_page=#{params[:per_page]}&page=#{params[:page_no]}")
+		validate_response(all_tickets_res)
+		render json: all_tickets_res.body, status: res.code
   end
 
   def read
@@ -26,21 +25,19 @@ class Api::V1::TicketController < ApplicationController
 		ticket_res = self.class.get("/tickets/#{params[:id]}")
 		validate_response(ticket_res)
 		ticket_res = JSON.parse(ticket_res.body)
-		
-		raise BlogVault::Error.new('Ticket Not Exist') if(ticket_res[:user_id] == params[:user_id])
+		raise BlogVault::Error.new('This Ticket doesn\'t exists') unless (ticket_res["requester_id"] == params[:user_id])
 		
 		conversation_res = self.class.get("/tickets/#{params[:id]}/conversations")
 		validate_response(conversation_res)
 		conversation_res = JSON.parse(conversation_res.body)
 		
-		conversation_res = conversation_res.select{|conversation| conversation['private'] == false}
-		ticket_res["conversationList"] = conversation_res
+		ticket_res["conversationList"] = conversation_res.select{|conversation| conversation['private'] == false}
 		render json: ticket_res, status: 200
   end
 
   def create
 		verify_fields(params, [:subject, :description])
-		body = required_field(params,[:attachments, :subject, :description])
+		body = required_field(params, [:attachments, :subject, :description])
 		body[:email] = @email
 		body[:priority] = 1
 		body[:status] = 2
@@ -102,25 +99,25 @@ class Api::V1::TicketController < ApplicationController
 	end
 
 	def required_field(obj, labels_list)
-		body = Hash.new
+		res_body = Hash.new
 		labels_list.each do |label| 
 			if obj.has_key?(label)
-				body[label] = obj[label]
+				res_body[label] = obj[label]
 			end
 		end
-		body
+		res_body
 	end
 
 	def verify_fields(obj, args)
 		args.each do |label|
-		  raise BlogVault::Error.new('You have not send all required fields')	unless obj.has_key?(label)
+		  raise BlogVault::Error.new('You have not sent all the required fields')	unless obj.has_key?(label)
 		end
 	end
 
-	def validate_response(resp)
-		if resp.code != 200 && resp.code != 201 
-			body = JSON.parse(resp.body)
-			body["errors"].each do |error|
+	def validate_response(res)
+		if res.code != 200 && res.code != 201 
+			res_body = JSON.parse(res.body)
+			res_body["errors"].each do |error|
 				if error["message"] == 'There is no contact matching the given email'
 					raise BlogVault::Error.new("You have no Tickets!!!")
 				end
