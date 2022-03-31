@@ -16,7 +16,7 @@ class Api::V1::TicketController < ApplicationController
 		verify_fields(params, [:page_no, :per_page]) 
 		all_tickets_res = self.class.get("/tickets?order_by=updated_at&email=#{@email}&per_page=#{params[:per_page]}&page=#{params[:page_no]}")
 		validate_response(all_tickets_res)
-		render json: all_tickets_res.body, status: res.code
+		render json: all_tickets_res.body, status: all_tickets_res.code
   end
 
   def read
@@ -108,8 +108,8 @@ class Api::V1::TicketController < ApplicationController
 		res_body
 	end
 
-	def verify_fields(obj, args)
-		args.each do |label|
+	def verify_fields(obj, labels)
+		labels.each do |label|
 		  raise BlogVault::Error.new('You have not sent all the required fields')	unless obj.has_key?(label)
 		end
 	end
@@ -117,6 +117,7 @@ class Api::V1::TicketController < ApplicationController
 	def validate_response(res)
 		if res.code != 200 && res.code != 201 
 			res_body = JSON.parse(res.body)
+			#byebug
 			res_body["errors"].each do |error|
 				if error["message"] == 'There is no contact matching the given email'
 					raise BlogVault::Error.new("You have no Tickets!!!")
@@ -133,7 +134,8 @@ class Api::V1::TicketController < ApplicationController
 
 	def catch_error(error)
 		logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
-		render json: { message: error }, status: 400
+		p error
+		render json: { message: 'Server Error' }, status: 400
 	end
 
 	def catch_custom_error(error)
