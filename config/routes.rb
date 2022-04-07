@@ -12,7 +12,10 @@ Rails.application.routes.draw do
       get 'ticket/blog_uri_list' => 'ticket#blog_uri_list'
     end
   end
-  get "#{Freshdesk.routes}", to:'homepage#index'
-  get "#{Freshdesk.routes}/*other", to:'homepage#index'
+
+  ticket_route = Freshdesk.routes
+
+  get ticket_route, to:'homepage#index'
+  get "#{ticket_route}/*other", to:'homepage#index'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 end
