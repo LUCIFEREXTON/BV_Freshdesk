@@ -12,10 +12,11 @@ module Freshdesk
 	end
 
   class << self
-  	attr_accessor :api_key, :base_url	
-		def config(api, url)
+  	attr_accessor :api_key, :base_url, :routes	
+		def config(api, url, routes)
 			self.api_key = "Basic #{Base64.strict_encode64(api)}"
 			self.base_url = "#{url}/api/v2"
+			self.routes = routes
 		end
   end
 end
