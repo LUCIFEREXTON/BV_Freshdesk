@@ -29,23 +29,35 @@ This command will do the following actions:
   2. Create or append a file `app/assets/config/manifest.js`
   3. Will Add `//= link freshdesk/manifest.js` inside file `app/assets/config/manifest.js` at the end.
   4. Will add  following line of code in `config/initializers/freshdesk.rb` that was created in step 1
+  5. Will send the javascript frontend files to your app in the app/javascript/Freshdesk_Essentials folder, from where you can edit the frontend as you desire.
+  6. Will send a freshdesk.jsx file in app/javascript/packs folder which will act as the index file for the frontend.
 ```
 require 'freshdesk'
 
-#Freshdesk.config <Your Freshdesk Api key>, <Your freshdesk baseurl>
+#Freshdesk.config <Your Freshdesk Api key>, <Your freshdesk baseurl>, <React frontend routes>
 e.g., 
-#Freshdesk.config "Bfjk4t0gjtgj98jt5hghg",'https://something.freshdesk.com'
+#Freshdesk.config "Bfjk4t0gjtgj98jt5hghg",'https://something.freshdesk.com', '/tickets'
 ```
 
-In the file `config/initializers/freshdesk.rb`, add your freshdesk api key and freshdesk url as shown in the e.g.
+In the file `config/initializers/freshdesk.rb`, add your freshdesk api key, freshdesk url and the route which will be used by your frontend as shown in the e.g.
 
-Before making any api call to fetch, update, read, delete ticket you have to enter your customer's email
+Before making any api call to fetch, update, and  read ticket you have to enter your customer's email
 In the controller where your customer will be logged in do the following:
 
 Import freshdesk `require 'freshdesk'`
 then `Freshdesk::UserCredentials.set_email <User Email>` to set email
 
 (<i>Tip: You can set this just after user gets login so that you don't have to set it just before api call</i>)
+
+To add new fields for Ticket Creation Form, do the following steps:
+  1. Go to your freshdesk dashboard.
+  2. From the left navigation panel, select settings. (Note you need admin privileges to follow along after this.)
+  3. Go to Workflows and click on Ticket Fields.
+  4. There you will find some default fiedls and from the left panel you create your own custom field. They have 8 types from which you can choose.
+  5. You can give the name and assign different labels for customer and agent for a field.
+  6. If you want the field to be present in the Ticket Creation form, check the customer can edit checkbox.
+  7. If you want the field to be mandatorily filled by your User, then check the Required when submitting the form checkbox.
+  8. For dropdown custom field, please fill the dropdown choices fields, otherwise an empty dropdown list will be shown to the user in the creation form.
 
 ## Development
 
