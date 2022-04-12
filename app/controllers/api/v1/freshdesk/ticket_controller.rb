@@ -1,7 +1,7 @@
 require 'httparty'
 require 'json'
 require 'freshdesk'
-class Api::V1::TicketController < ApplicationController
+class Api::V1::Freshdesk::TicketController < ApplicationController
   include HTTParty
   include Freshdesk
 
@@ -175,7 +175,9 @@ class Api::V1::TicketController < ApplicationController
     ticket_fields_res = self.class.get("/ticket_fields")
     validate_response(ticket_fields_res)
     ticket_fields_res = JSON.parse(ticket_fields_res.body)
+    discard_fields = [ "requester", "company" ]
     ticket_fields_res = ticket_fields_res.select { |ticket_field| ticket_field["customers_can_edit"] == true }
+    ticket_fields_res = ticket_fields_res.select { |ticket_field| !discard_fields.include?(ticket_field["name"]) }
     ticket_fields_res
   end
 
