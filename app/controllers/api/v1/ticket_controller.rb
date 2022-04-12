@@ -51,15 +51,14 @@ class Api::V1::TicketController < ApplicationController
   end
 
   def new
-    ticket_fields_res = self.class.get("/ticket_fields")
-    validate_response(ticket_fields_res)
-    ticket_fields_res = JSON.parse(ticket_fields_res.body)
+    ticket_fields_res = fetch_ticket_fields
     ticket_fields_res = ticket_field_filter(ticket_fields_res)
     render json: ticket_fields_res, status: 200
   end
 
   def create
-    verify_fields(params, @required_fields)
+    required_fields = get_required_fields(fetch_ticket_fields)
+    verify_fields(params, required_fields)
     contact_exists?
     body = required_field(params, [:attachments, :subject, :description, :custom_fields])
     body[:email] = @email
@@ -172,94 +171,91 @@ class Api::V1::TicketController < ApplicationController
     @logger ||= ActiveSupport::Logger.new("#{Rails.root.to_s}/log/freshdesk.log")
   end
 
-  def ticket_field_filter(ticket_fields_res)
+  def fetch_ticket_fields
+    ticket_fields_res = self.class.get("/ticket_fields")
+    validate_response(ticket_fields_res)
+    ticket_fields_res = JSON.parse(ticket_fields_res.body)
     ticket_fields_res = ticket_fields_res.select { |ticket_field| ticket_field["customers_can_edit"] == true }
-    @required_fields = []
+    ticket_fields_res
+  end
+
+  def get_required_fields(ticket_fields_res)
+    required_fields = []
+    ticket_fields_res.each do |ticket_field|
+      required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
+    end
+    required_fields
+  end
+
+  def ticket_field_filter(ticket_fields_res)
     ticket_fields_res.each do |ticket_field|
       case ticket_field["type"]
 		
       when "default_requester"
 	ticket_field["type"] = "text"
 	ticket_field["input_type"] = "text"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_subject"
 	ticket_field["type"] = "text"
 	ticket_field["input_type"] = "text"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_ticket_type"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_source"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_status"
 	ticket_field["type"] = "select"
 	ticket_field["choices"] = ticket_field["choices"].each_with_object({}) do |(key, value), choice|
 	  choice[value.last] = key
 	end
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_priority"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_group"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_agent"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_description"
 	ticket_field["type"] = "textarea"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "default_company"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "custom_text"
 	ticket_field["type"] = "text"
 	ticket_field["input_type"] = "text"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 		
       when "custom_checkbox"
 	ticket_field["type"] = "checkbox"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "custom_dropdown"
 	ticket_field["type"] = "select"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "nested_field"
 	ticket_field["type"] = "nested_dropdown"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "custom_date"
 	ticket_field["type"] = "date"
 	ticket_field["input_type"] = "date"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "custom_number"
 	ticket_field["type"] = "number"
 	ticket_field["input_type"] = "text"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       when "custom_decimal"
 	ticket_field["type"] = "decimal"
 	ticket_field["input_type"] = "text"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
 
       else
 	ticket_field["type"] = "textarea"
-	@required_fields << ticket_field["name"] if ticket_field["required_for_customers"]
       end
     end
+    ticket_fields_res
   end
 
   def contact_exists?
