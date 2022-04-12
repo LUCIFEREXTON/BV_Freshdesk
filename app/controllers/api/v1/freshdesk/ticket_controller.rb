@@ -7,6 +7,7 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
 
   protect_from_forgery
   before_action :load_user_defaults
+  before_action :check_user_defaults
   before_action :check_user_email
   before_action :httparty_default_setting
   rescue_from StandardError, :with => :catch_error
@@ -14,7 +15,7 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
 
   def index
     verify_fields(params, [:page_no, :per_page, :order_by])
-    all_tickets_res = self.class.get("/tickets?email=#{@email}&order_by=#{params[:order_by]}&per_page=#{params[:per_page]}&page=#{params[:page_no]}")
+    all_tickets_res = self.class.get("/tickets?email=#{@email}&order_by=#{params[:order_by]}&per_page=#{@tickets_per_request}&page=#{params[:page_no]}")
     validate_response(all_tickets_res)
     all_tickets_res = JSON.parse(all_tickets_res.body)
     open_tickets = all_tickets_res.select { |ticket| [2,3].include?(ticket["status"]) }
@@ -29,7 +30,8 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   def init_settings
     body = {
       :per_page => @per_page,
-      :route => Freshdesk.routes
+      :route => Freshdesk.routes,
+      :tickets_per_request => @tickets_per_request
     }
     render json: body, status: 200
   end
@@ -150,6 +152,12 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
       end
       raise BlogVault::Error.new("Server Issue, Please Try Again...") 
     end
+  end
+
+  def check_user_defaults
+    @per_page ||= 10
+    @tickets_per_request ||= 100
+    @tickets_per_request = @tickets_per_request <= 100 ? @tickets_per_request : 100
   end
 
   def check_user_email
