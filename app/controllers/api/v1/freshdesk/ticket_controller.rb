@@ -161,8 +161,9 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     validate_response(ticket_fields_res)
     ticket_fields_res = JSON.parse(ticket_fields_res.body)
     discard_fields = [ "requester", "company" ]
-    ticket_fields_res = ticket_fields_res.select { |ticket_field| ticket_field["customers_can_edit"] == true }
-    ticket_fields_res = ticket_fields_res.select { |ticket_field| !discard_fields.include?(ticket_field["name"]) }
+    ticket_fields_res = ticket_fields_res.select do |ticket_field| 
+      ticket_field["customers_can_edit"] == true && !discard_fields.include?(ticket_field["name"])
+    end
     ticket_fields_res
   end
 
