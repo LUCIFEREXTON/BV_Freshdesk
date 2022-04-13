@@ -7,9 +7,6 @@ module Freshdesk
   class Engine < ::Rails::Engine
     config.autoload_paths << "#{Gem.loaded_specs['freshdesk'].full_gem_path}/lib"
   end
-  
-  class Error < StandardError
-  end
 
   class << self
     attr_accessor :app, :api_key, :base_url, :routes	
