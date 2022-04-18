@@ -1,8 +1,9 @@
 require 'freshdesk'
 Rails.application.routes.draw do
+  app_name = Freshdesk.app || "freshdesk"
   namespace :api do
     namespace :v1 do
-      namespace Freshdesk.app.to_sym do
+      namespace app_name.to_sym do
 	get 'ticket/init_settings' => 'ticket#init_settings'
 	get 'ticket/index' => 'ticket#index'
 	post 'ticket/read' => 'ticket#read'
