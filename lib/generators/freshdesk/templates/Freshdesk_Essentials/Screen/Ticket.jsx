@@ -55,7 +55,7 @@ const Ticket = () => {
         }
       })
       .then(res => {
-        dispatch({type:'UPDATE_CONVERSATIONS', conversationList: [...conversationList, res.data]})
+        setConversationList([...conversationList, res.data])
         setopenreply(false)
         setEditorState(() => EditorState.createEmpty())
         changeFiles([])
@@ -135,6 +135,7 @@ const Ticket = () => {
             placeholder="Please detail your issue or question"
             editorState={editorState}
             onEditorStateChange={setEditorState}
+            autoFocus={true}
           />
         </div>          
         <form ref={formRef}>

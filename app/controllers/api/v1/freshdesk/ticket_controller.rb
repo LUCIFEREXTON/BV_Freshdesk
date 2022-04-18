@@ -31,7 +31,7 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     ticket_res = self.class.get("/tickets/#{params[:id]}")
     validate_response(ticket_res)
     ticket_res = JSON.parse(ticket_res.body)
-    raise BlogVault::NotFoundError.new('Ticket') if (ticket_res["requester_id"] != params[:user_id])
+    raise BlogVault::NotFoundError.new('Ticket') if (ticket_res["requester_id"].to_s != params[:user_id])
     conversation_res = self.class.get("/tickets/#{params[:id]}/conversations")
     validate_response(conversation_res)
     conversation_res = JSON.parse(conversation_res.body)
