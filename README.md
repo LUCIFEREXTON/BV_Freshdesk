@@ -29,8 +29,8 @@ This command will do the following actions:
   2. Create or append a file `app/assets/config/manifest.js`
   3. Will Add `//= link freshdesk/manifest.js` inside file `app/assets/config/manifest.js` at the end.
   4. Will add  following line of code in `config/initializers/freshdesk.rb` that was created in step 1
-  5. Will send the javascript frontend files to your app in the app/javascript/Freshdesk_Essentials folder, from where you can edit the frontend as you desire.
-  6. Will send a freshdesk.jsx file in app/javascript/packs folder which will act as the index file for the frontend.
+  5. Will add the javascript frontend files to your app in the app/javascript/Freshdesk_Essentials folder, from where you can edit the frontend as you desire.
+  6. Will add a freshdesk.jsx file in app/javascript/packs folder which will act as the index file for the frontend.
 ```
 require 'freshdesk'
 

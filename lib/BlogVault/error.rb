@@ -20,8 +20,12 @@ module BlogVault
   end
 
   class ServerError < StandardError
+    def initialize(message = "Server Issue, Please Try Again...")
+      @message = message
+    end
+
     def message
-      "Server Issue, Please Try Again..."
+      @message
     end
   end
 

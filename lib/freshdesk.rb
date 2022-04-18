@@ -14,7 +14,7 @@ module Freshdesk
       self.app = app_name
       self.api_key = "Basic #{Base64.strict_encode64(api)}"
       self.base_url = "#{url}/api/v2"
-      self.routes = routes
+      self.routes = routes || "/tickets"
     end
   end
 end
