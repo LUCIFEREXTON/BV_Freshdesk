@@ -19,11 +19,11 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     all_tickets_res = JSON.parse(all_tickets_res.body)
     open_tickets = all_tickets_res.select { |ticket| [2,3].include?(ticket["status"]) }
     close_tickets = all_tickets_res.select { |ticket| [4,5].include?(ticket["status"]) }
-    render json: { :open => open_tickets, :close => close_tickets }, status: 200
+    render json: { :open => open_tickets, :close => close_tickets }, status: :ok
   end
 
   def init_settings
-    render json: { :per_page => @per_page, :route => Freshdesk.routes, :tickets_per_request => @tickets_per_request }, status: 200
+    render json: { :per_page => @per_page, :route => Freshdesk.routes, :tickets_per_request => @tickets_per_request }, status: :ok
   end
 
   def read
@@ -36,13 +36,13 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     validate_response(conversation_res)
     conversation_res = JSON.parse(conversation_res.body)
     ticket_res["conversationList"] = conversation_res.select{|conversation| conversation['private'] == false}
-    render json: ticket_res, status: 200
+    render json: ticket_res, status: :ok
   end
 
   def new
     ticket_fields_res = fetch_ticket_fields
     ticket_fields_res = ticket_field_filter(ticket_fields_res)
-    render json: ticket_fields_res, status: 200
+    render json: ticket_fields_res, status: :ok
   end
 
   def create
@@ -87,15 +87,8 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   end
 	
   def blog_uri_list
-    blog_uri = [
-      "https://google.com", 
-      "https://facebook.com",
-      "https://youtube.com",
-      "https://twitter.com",
-      "https://amazon.com",
-      "https://blogvault.net"
-    ]
-    render json: { :blog_uri_list => blog_uri }, status: 200
+    @user_details[:blog_uri] ||= []
+    render json: { :blog_uri_list => @user_details[:blog_uri] }, status: :ok
   end
 
   private
@@ -124,11 +117,13 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   end
 
   def validate_response(res)
-    if res.code != 200 && res.code != 201 
-      res_body = JSON.parse(res.body)
-      res_body["errors"].each do |error|
-	if error["message"] == 'There is no contact matching the given email'
-	  raise BlogVault::NotFoundError.new("Tickets")
+    if res.code != 200 && res.code != 201
+      res_body = res.body.present? ? JSON.parse(res.body) : {}
+      if res_body["errors"].present?
+	res_body["errors"].each do |error|
+	  if error["message"] == 'There is no contact matching the given email'
+	    raise BlogVault::NotFoundError.new("Tickets")
+	  end
 	end
       end
       raise BlogVault::ServerError 
@@ -138,7 +133,7 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   def check_user_defaults
     @per_page ||= 10
     @tickets_per_request ||= 100
-    @tickets_per_request = @tickets_per_request <= 100 ? @tickets_per_request : 100
+    @tickets_per_request = [@tickets_per_request, 100].min
   end
 
   def check_user_email
@@ -149,7 +144,7 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   def catch_error(error)
     logger.error "#{error.class}- #{error.message} -#{error.backtrace}"
     error_message = error.class.to_s.include?("BlogVault::") ? error.message : "Server Error"
-    render json: { message: error_message }, status: 400
+    render json: { message: error_message }, status: :unprocessable_entity
   end
 	
   def logger
@@ -178,67 +173,29 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   def ticket_field_filter(ticket_fields_res)
     ticket_fields_res.each do |ticket_field|
       case ticket_field["type"]
-		
-      when "default_requester"
+      when "default_requester", "default_subject", "custom_text"
 	ticket_field["type"] = "text"
 	ticket_field["input_type"] = "text"
-
-      when "default_subject"
-	ticket_field["type"] = "text"
-	ticket_field["input_type"] = "text"
-
-      when "default_ticket_type"
+      when "default_ticket_type", "default_source", "default_priority", "default_group", "default_agent", "default_company", "custom_dropdown"
 	ticket_field["type"] = "select"
-
-      when "default_source"
-	ticket_field["type"] = "select"
-
       when "default_status"
 	ticket_field["type"] = "select"
 	ticket_field["choices"] = ticket_field["choices"].each_with_object({}) do |(key, value), choice|
 	  choice[value.last] = key
 	end
-
-      when "default_priority"
-	ticket_field["type"] = "select"
-
-      when "default_group"
-	ticket_field["type"] = "select"
-
-      when "default_agent"
-	ticket_field["type"] = "select"
-
-      when "default_description"
-	ticket_field["type"] = "textarea"
-
-      when "default_company"
-	ticket_field["type"] = "select"
-
-      when "custom_text"
-	ticket_field["type"] = "text"
-	ticket_field["input_type"] = "text"
-		
       when "custom_checkbox"
 	ticket_field["type"] = "checkbox"
-
-      when "custom_dropdown"
-	ticket_field["type"] = "select"
-
       when "nested_field"
 	ticket_field["type"] = "nested_dropdown"
-
       when "custom_date"
 	ticket_field["type"] = "date"
 	ticket_field["input_type"] = "date"
-
       when "custom_number"
 	ticket_field["type"] = "number"
 	ticket_field["input_type"] = "text"
-
       when "custom_decimal"
 	ticket_field["type"] = "decimal"
 	ticket_field["input_type"] = "text"
-
       else
 	ticket_field["type"] = "textarea"
       end
