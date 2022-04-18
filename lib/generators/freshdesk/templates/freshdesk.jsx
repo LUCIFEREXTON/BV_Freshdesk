@@ -7,6 +7,11 @@ import ReactDOM from 'react-dom'
 import '../Freshdesk_Essentials/index.css';
 import App from '../Freshdesk_Essentials/App';
 import reportWebVitals from '../Freshdesk_Essentials/reportWebVitals';
+//bootstrap
+import '../Freshdesk_Essentials/custom_bootstrap.scss'
+import $ from 'jquery';
+import Popper from 'popper.js';
+import 'bootstrap/dist/js/bootstrap.bundle.min';
 //redux
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
@@ -14,11 +19,11 @@ import reducer from '../Freshdesk_Essentials/reducer';
 import axios from 'axios';
 import { composeWithDevTools } from "redux-devtools-extension";
 const token = document.querySelector('[name=csrf-token]').content;
-axios.defaults.baseURL = "http://localhost:3000/api/v1";
+axios.defaults.baseURL = "http://localhost:3000/api/v1/freshdesk";
 axios.defaults.headers.common['X-CSRF-TOKEN'] = token
 const store = createStore(reducer, composeWithDevTools());
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('turbolinks:load', () => {
   ReactDOM.render(
   <Provider store={store}>
     <React.StrictMode>
