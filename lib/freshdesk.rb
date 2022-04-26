@@ -10,8 +10,8 @@ module Freshdesk
 
   class << self
     attr_accessor :app, :api_key, :base_url, :routes	
-    def config(app_name='freshdesk', api, url, routes)
-      self.app = app_name
+    def config(app_name, api, url, routes)
+      self.app = app_name || "freshdesk"
       self.api_key = "Basic #{Base64.strict_encode64(api)}"
       self.base_url = "#{url}/api/v2"
       self.routes = routes || "/tickets"

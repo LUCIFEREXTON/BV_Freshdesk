@@ -5,6 +5,12 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   include HTTParty
   include Freshdesk
 
+  LOW_PRIORITY = 1
+  OPEN_TICKET = 2
+  PENDING_TICKET = 3
+  RESOLVED_TICKET = 4
+  CLOSE_TICKET = 5
+
   protect_from_forgery
   before_action :load_user_defaults
   before_action :check_user_defaults
@@ -26,8 +32,8 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     all_tickets_res = self.class.get("/tickets?email=#{@email}&order_by=#{params[:order_by]}&per_page=#{@tickets_per_request}&page=#{params[:page_no]}")
     validate_response(all_tickets_res)
     all_tickets_res = JSON.parse(all_tickets_res.body)
-    open_tickets = all_tickets_res.select { |ticket| [2,3].include?(ticket["status"]) }
-    close_tickets = all_tickets_res.select { |ticket| [4,5].include?(ticket["status"]) }
+    open_tickets = all_tickets_res.select { |ticket| [OPEN_TICKET, PENDING_TICKET].include?(ticket["status"]) }
+    close_tickets = all_tickets_res.select { |ticket| [RESOLVED_TICKET, CLOSE_TICKET].include?(ticket["status"]) }
     render json: { :open => open_tickets, :close => close_tickets }, status: :ok
   end
 
@@ -69,8 +75,8 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     contact_exists?
     body = required_field(params, [:attachments, :subject, :description, :custom_fields])
     body[:email] = @email
-    body[:priority] = 1
-    body[:status] = 2	
+    body[:priority] = LOW_PRIORITY
+    body[:status] = OPEN_TICKET
     res = self.class.post('/tickets', {
       :body => body,
       :headers => {"Content-Type" => 'multipart/form-data'} }
@@ -80,10 +86,18 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   end
 
   # The API call used in the below "update" method will update the status of the ticket using its ticket id.
+  # There are two API call used here.
+  # The first one GET "/tickets/#{params[:id]}" fetch the details of the ticket using its id.
+  # It then checks whether the fetched ticket belongs to user whose id is passed in user_id or not.
+  # The second API PUT "/tickets/#{params[:id]}" updates the status of the ticket.
   # The status the user can change is from "Open" -> "Close" or from "Close" -> "Open"
   # The result of the API call which we will get is all the details of the ticket with the updated status.
   def update
-    verify_params(params, [:id, :status])
+    verify_params(params, [:id, :status, :user_id])
+    ticket_res = self.class.get("/tickets/#{params[:id]}")
+    validate_response(ticket_res)
+    ticket_res = JSON.parse(ticket_res.body)
+    raise BlogVault::NotFoundError.new('Ticket') if (ticket_res["requester_id"] != params[:user_id])
     res = self.class.put("/tickets/#{params[:id]}",{:body => { status: params[:status]}.to_json(),:headers => {"Content-Type" => "application/json"}})
     validate_response(res)
     render json: res.body, status: res.code
@@ -114,16 +128,8 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   end
 	
   def blog_uri_list
-    :blog_uri => [
-			"https://google.com",
-			"https://facebook.com",
-			"https://youtube.com",
-			"https://twitter.com",
-			"https://amazon.com",
-			"https://blogvault.net"
-		]
-
-    render json: { :blog_uri_list => :blog_uri }, status: :ok
+    @user_blog_uri ||= []
+    render json: { :blog_uri_list => @user_blog_uri }, status: :ok
   end
 
   private
@@ -137,11 +143,11 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     res_body = Hash.new
     labels_list.each do |label| 
       if obj.has_key?(label)
-				if(label === :custom_fields)
-					res_body[label] = JSON.parse(obj[label])
-				else
-					res_body[label] = obj[label]
-				end
+	if(label === :custom_fields)
+	  res_body[label] = JSON.parse(obj[label])
+	else
+	  res_body[label] = obj[label]
+	end
       end
     end
     res_body
