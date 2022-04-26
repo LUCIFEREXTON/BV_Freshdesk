@@ -87,8 +87,16 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   end
 	
   def blog_uri_list
-    @user_details[:blog_uri] ||= []
-    render json: { :blog_uri_list => @user_details[:blog_uri] }, status: :ok
+    :blog_uri => [
+			"https://google.com",
+			"https://facebook.com",
+			"https://youtube.com",
+			"https://twitter.com",
+			"https://amazon.com",
+			"https://blogvault.net"
+		]
+
+    render json: { :blog_uri_list => :blog_uri }, status: :ok
   end
 
   private
@@ -102,7 +110,11 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     res_body = Hash.new
     labels_list.each do |label| 
       if obj.has_key?(label)
-	res_body[label] = obj[label]
+				if(label === :custom_fields)
+					res_body[label] = JSON.parse(obj[label])
+				else
+					res_body[label] = obj[label]
+				end
       end
     end
     res_body
