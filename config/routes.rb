@@ -4,14 +4,13 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       namespace app_name.to_sym do
-	get 'ticket/init_settings' => 'ticket#init_settings'
-	get 'ticket/index' => 'ticket#index'
-	post 'ticket/read' => 'ticket#read'
-	get 'ticket/create' => 'ticket#new'
-	post 'ticket/create' => 'ticket#create'
-	put 'ticket/update/:id' => 'ticket#update'
-	post 'ticket/reply/:id' => 'ticket#reply'
-	get 'ticket/blog_uri_list' => 'ticket#blog_uri_list'
+				get 'ticket/init_settings' => 'ticket#init_settings'
+				get 'ticket/index' => 'ticket#index'
+				post 'ticket/read' => 'ticket#read'
+				get 'ticket/create' => 'ticket#new'
+				post 'ticket/create' => 'ticket#create'
+				put 'ticket/update/:id' => 'ticket#update'
+				post 'ticket/reply/:id' => 'ticket#reply'
       end
     end
   end
