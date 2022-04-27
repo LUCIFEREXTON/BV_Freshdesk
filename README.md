@@ -85,6 +85,25 @@ In the above method:
   4. @per_page stores the number of tickets you want to show in a page in frontend.
   5. @tickets_per_request stores number of tickets to fetch per api call.
 
+To add new controllers to the existing controllers follow the below steps:
+  1. In your app create a new controller in the following path `app/controllers/api/v1/freshdesk`.
+  2. The controller should inherit from the `Api::V1::Freshdesk::TicketController`.
+  3. Below is a sample controller:
+  ```
+  class Api::V1::Freshdesk::CustomController < Api::V1::Freshdesk::TicketController
+  end
+  ```
+  4. Go to the config/routes.rb file and add your routes like this:
+  ```
+  namespace :api do
+    namespace :v1 do
+      namespace :freshdesk do
+        <your routes>
+      end
+    end
+  end
+  ```
+
 (<i>Tip: You can set this just after user gets login so that you don't have to set it just before api call</i>)
 
 To add new fields for Ticket Creation Form, do the following steps:
