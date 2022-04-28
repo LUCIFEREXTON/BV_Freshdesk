@@ -126,11 +126,6 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     validate_response(res)
     render json: res.body, status: res.code
   end
-	
-  def blog_uri_list
-    @user_blog_uri ||= []
-    render json: { :blog_uri_list => @user_blog_uri }, status: :ok
-  end
 
   private
 	

@@ -11,7 +11,6 @@ Rails.application.routes.draw do
 	post 'ticket/create' => 'ticket#create'
 	put 'ticket/update/:id' => 'ticket#update'
 	post 'ticket/reply/:id' => 'ticket#reply'
-	get 'ticket/blog_uri_list' => 'ticket#blog_uri_list'
       end
     end
   end
