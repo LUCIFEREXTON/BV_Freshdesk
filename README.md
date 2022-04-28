@@ -2,7 +2,7 @@
 
 Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/freshdesk`. To experiment with that code, run `bin/console` for an interactive prompt.
 
-TODO: Delete this and the text above, and describe your gem
+[Documentation and other important links](https://docs.google.com/document/d/1lHf5oPygSfTt02e2TDwgpCZPNpw9CKv6XXSXRyiw92A/edit?usp=sharing)
 
 ## Installation
 
