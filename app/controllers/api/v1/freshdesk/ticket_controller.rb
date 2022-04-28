@@ -5,6 +5,12 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   include HTTParty
   include Freshdesk
 
+  LOW_PRIORITY = 1
+  OPEN_TICKET = 2
+  PENDING_TICKET = 3
+  RESOLVED_TICKET = 4
+  CLOSE_TICKET = 5
+
   protect_from_forgery
   before_action :load_user_defaults
   before_action :check_user_defaults
@@ -12,13 +18,22 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
   before_action :httparty_default_setting
   rescue_from StandardError, :with => :catch_error
 
+  # The API call used in the below "index" method fetch the tickets of a user using their email.
+  # The will be fetched in a sorted order according to value of order_by which can take value "created_at" or "updated_at".
+  # One call will fetch max @tickets_per_request tickets.
+  # The max value of @tickets_per_request is 100.
+  # Pagination is done using page value.
+  # The result of the API call be separated into Open and Close Tickets and will be sent to the frontend.
+  # The tickets will be separated according to the status value.
+  # The status "2" which represents "Open" and "3" which represents "Pending" will be placed in the open_tickets.
+  # The status "4" which represents "Resolved" and "5" which represents "Close" will be placed in the close_tickets. 
   def index
-    verify_params(params, [:page_no, :order_by])
+    verify_params(params, [:page_no, :order_by]) 
     all_tickets_res = self.class.get("/tickets?email=#{@email}&order_by=#{params[:order_by]}&per_page=#{@tickets_per_request}&page=#{params[:page_no]}")
     validate_response(all_tickets_res)
     all_tickets_res = JSON.parse(all_tickets_res.body)
-    open_tickets = all_tickets_res.select { |ticket| [2,3].include?(ticket["status"]) }
-    close_tickets = all_tickets_res.select { |ticket| [4,5].include?(ticket["status"]) }
+    open_tickets = all_tickets_res.select { |ticket| [OPEN_TICKET, PENDING_TICKET].include?(ticket["status"]) }
+    close_tickets = all_tickets_res.select { |ticket| [RESOLVED_TICKET, CLOSE_TICKET].include?(ticket["status"]) }
     render json: { :open => open_tickets, :close => close_tickets }, status: :ok
   end
 
@@ -26,6 +41,10 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     render json: { :per_page => @per_page, :route => Freshdesk.routes, :tickets_per_request => @tickets_per_request }, status: :ok
   end
 
+  # The API call used in the below "read" method is used to fetch all the details of a particular ticket including conversation.
+  # There are two APIs call used here.
+  # The first one "/tickets/#{id}" fetch details of a ticket except its conversation using ticket id.
+  # The second API call "tickets/#{id}/conversation" fetch the conversation of the ticket using the ticket id.
   def read
     verify_params(params, [:id, :user_id])
     ticket_res = self.class.get("/tickets/#{params[:id]}")
@@ -45,14 +64,19 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     render json: ticket_fields_res, status: :ok
   end
 
+  # The API call used in the below "create" method will create a new ticket.
+  # The tickets needs some mandotory fields, and two of them are "priority" and "status" fields.
+  # The "1" in priority represents "Low" priority.
+  # The "2" in status represents "Open" status.
+  # The result of the API call which we will get is all the details of the newly created ticket.
   def create
     required_fields = get_required_fields(fetch_ticket_fields)
     verify_params(params, required_fields)
     contact_exists?
     body = required_field(params, [:attachments, :subject, :description, :custom_fields])
     body[:email] = @email
-    body[:priority] = 1
-    body[:status] = 2	
+    body[:priority] = LOW_PRIORITY
+    body[:status] = OPEN_TICKET
     res = self.class.post('/tickets', {
       :body => body,
       :headers => {"Content-Type" => 'multipart/form-data'} }
@@ -61,13 +85,30 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     render json: res.body, status: res.code
   end
 
+  # The API call used in the below "update" method will update the status of the ticket using its ticket id.
+  # There are two API call used here.
+  # The first one GET "/tickets/#{params[:id]}" fetch the details of the ticket using its id.
+  # It then checks whether the fetched ticket belongs to user whose id is passed in user_id or not.
+  # The second API PUT "/tickets/#{params[:id]}" updates the status of the ticket.
+  # The status the user can change is from "Open" -> "Close" or from "Close" -> "Open"
+  # The result of the API call which we will get is all the details of the ticket with the updated status.
   def update
-    verify_params(params, [:id, :status])
+    verify_params(params, [:id, :status, :user_id])
+    ticket_res = self.class.get("/tickets/#{params[:id]}")
+    validate_response(ticket_res)
+    ticket_res = JSON.parse(ticket_res.body)
+    raise BlogVault::NotFoundError.new('Ticket') if (ticket_res["requester_id"] != params[:user_id])
     res = self.class.put("/tickets/#{params[:id]}",{:body => { status: params[:status]}.to_json(),:headers => {"Content-Type" => "application/json"}})
     validate_response(res)
     render json: res.body, status: res.code
   end
 
+  # The API call used in the below "reply" method is to reply to a ticket using the ticket id.
+  # There are two APIs call used here.
+  # The first one "/agents/#{agent_id}" will check the agent associated with the ticket.
+  # This API will get us the email of the agent using which we can notify that agent about the user's reply.
+  # The second API "/tickets/#{ticket_id}/notes" is the API which will send the reply of the user.
+  # The result of the API call which we will get is the details of the reply that was created by the API. 
   def reply
     verify_params(params, [:agent_id, :body, :id, :user_id])
     body = required_field(params, [:body, :user_id, :attachments])
@@ -97,11 +138,11 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     res_body = Hash.new
     labels_list.each do |label| 
       if obj.has_key?(label)
-				if(label === :custom_fields)
-					res_body[label] = JSON.parse(obj[label])
-				else
-					res_body[label] = obj[label]
-				end
+	if(label === :custom_fields)
+	  res_body[label] = JSON.parse(obj[label])
+	else
+	  res_body[label] = obj[label]
+	end
       end
     end
     res_body
@@ -150,6 +191,7 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     @logger ||= ActiveSupport::Logger.new("#{Rails.root.to_s}/log/freshdesk.log")
   end
 
+  # The API used in the below "fetch_ticket_fields" will fetch all the ticket fields that a user can fill to create a ticket.
   def fetch_ticket_fields
     ticket_fields_res = self.class.get("/ticket_fields")
     validate_response(ticket_fields_res)
@@ -202,6 +244,10 @@ class Api::V1::Freshdesk::TicketController < ApplicationController
     ticket_fields_res
   end
 
+  # The API call used in the below "contact_exists?" method will create a new user in the Freshdesk if it does not exist.
+  # There are two APIs used here.
+  # The first one "/contacts?email=#{@email}" will check if the user with given email exist or not.
+  # If user does not exist then the second API "/contacts" will create a new user using user's information.
   def contact_exists?
     contact_res = self.class.get("/contacts?email=#{@email}")
     validate_response(contact_res)
